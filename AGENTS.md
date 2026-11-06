@@ -17,20 +17,37 @@ The project is at its very start: nothing is built yet. Begin with the spike bel
   live Home Assistant (Raspberry Pi 5, reachable as `ssh ha`; it runs a real home) only with the
   owner's explicit consent each time. Committing and pushing finished, green work to `main` is fine.
 
-## Family and documentation
+## Documentation (Notion; read before working)
 
-- Notion: the owner's workspace has **AI Personal Assistant** (page id
-  `40de74ee720f80c9b562f4ecd6994808`) with the projects
-  [FlowPilot](https://app.notion.com/p/40de74ee720f8085816fccb77ca103f7) and
-  [Telegram Assist](https://app.notion.com/p/410e74ee720f81b2a43aff42b25bf396). **Create a page
-  "ChatGPT Gateway" there** (description, decisions with their trade-offs, spike results, status,
-  roadmap) and link it here, as Telegram Assist's `AGENTS.md` does.
-- The decisions behind this project are recorded in FlowPilot's Notion page "07 · Roadmap" (ADR-018:
-  a lightweight agent of FlowPilot's own; tools, skills and MCP live in FlowPilot, not in the
-  gateway).
-- Look at the sibling repositories for conventions, CI, releases and README style:
-  `~/Projects/ha-telegram-assist` (smallest, closest in shape) and `~/Projects/ha-flow-pilot`
-  (the app: `addon/`, `Dockerfile`, `.github/workflows/release.yml`, `scripts/brand.py`).
+- **[ChatGPT Gateway](https://app.notion.com/p/410e74ee720f819a84bdd2aba61d0979)** — the project
+  page: what was found about Sign in with ChatGPT (with sources), rejected approaches, decisions,
+  the spike checklist, the app plan, risks, status and roadmap. Start here.
+- **[Поставка в Home Assistant](https://app.notion.com/p/410e74ee720f81f184cfc6ecf07080ba)** —
+  how this family of projects ships: repository layout, branding (`scripts/brand.py`), README
+  style, the app's `config.yaml`, prebuilt multi-arch images, changelog with `### App` /
+  `### Integration`, `release.yml`, CI rules, testing on the dev Home Assistant. Follow it.
+- Both pages live under **AI Personal Assistant** (page id `40de74ee720f80c9b562f4ecd6994808`),
+  next to [FlowPilot](https://app.notion.com/p/40de74ee720f8085816fccb77ca103f7) and
+  [Telegram Assist](https://app.notion.com/p/410e74ee720f81b2a43aff42b25bf396). The decisions
+  behind this project are also in FlowPilot's "07 · Roadmap" (ADR-018: tools, skills and MCP live
+  in FlowPilot, not in the gateway).
+- Sibling repositories to copy conventions from: `~/Projects/ha-telegram-assist` (smallest) and
+  `~/Projects/ha-flow-pilot` (the app: `addon/`, `Dockerfile`, `.github/workflows/release.yml`,
+  `scripts/brand.py`).
+
+### Working with Notion
+
+- Use the Notion MCP tools: `notion-fetch` (by URL or page id) to read, `notion-update-page` to
+  edit (prefer targeted `update_content` replacements over rewriting a whole page),
+  `notion-create-pages` with the parent page id for new child pages.
+- Notion is **in Russian**; the repository stays in English. Do not duplicate Notion in the
+  repository: link it.
+- Keep the project page current as you work: after the spike, write the answers with evidence
+  into its spike section; record each decision with its trade-offs (what was chosen, what was
+  rejected and why); update **Status** and the **Roadmap** when a step is done or plans change.
+  If you learn something about shipping that applies to all projects, add it to the delivery
+  page.
+- Never put secrets, tokens, API keys, account data or personal data in Notion.
 
 ## What was decided (and why)
 
@@ -135,4 +152,5 @@ page and summarize them for the owner before building.
   files with secrets in sibling repositories.
 - Do not mark a feature done without a real end-to-end test (here: a streamed answer to
   FlowPilot's LLM agent through the gateway with the owner's plan).
-- Record decisions with their trade-offs in Notion; keep the page's status and roadmap current.
+- Record decisions with their trade-offs in Notion; keep the page's status and roadmap current
+  (see "Working with Notion").
