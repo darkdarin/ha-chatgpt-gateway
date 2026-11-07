@@ -21,8 +21,9 @@ network as an **OpenAI-compatible API**: [FlowPilot](https://github.com/darkdari
 agent, Home Assistant integrations with a configurable OpenAI address, scripts and tools use it like
 any OpenAI endpoint.
 
-> In development: the first version (0.1) is not released yet. The sign-in has been tried end to
-> end; the API is being built.
+> Early version (0.1, not released yet). Sign-in, the model list and streamed answers with tool
+> calls work end to end with FlowPilot's LLM agent. Not translated yet: web search, files and
+> audio.
 
 ## What you get
 
@@ -91,9 +92,12 @@ for your household only.
 | Field | Support |
 |---|---|
 | `model` | a slug from `GET /v1/models` |
-| `messages` | `system`, `user` and `assistant` text messages |
-| `stream` | `true` (Server-Sent Events) or `false` |
-| `temperature`, `max_tokens` | accepted and ignored: ChatGPT plan usage does not support them |
+| `messages` | `system`, `developer`, `user`, `assistant` (with `tool_calls`) and `tool` messages; text, and images as `image_url` parts |
+| `stream` | `true` (Server-Sent Events, with `stream_options.include_usage`) or `false` |
+| `tools`, `tool_choice`, `parallel_tool_calls` | function tools: the model asks, the client runs them (the gateway never does) |
+| `reasoning_effort` | `none`, `low`, `medium`, `high`… as the model allows |
+| `response_format` | `json_object` and `json_schema` |
+| `temperature`, `top_p`, `max_tokens`, `stop`… | accepted and ignored: ChatGPT plan usage does not support them |
 
 ## If something does not work
 

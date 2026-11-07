@@ -27,8 +27,10 @@ Any client of the OpenAI API works: set its base URL and API key.
 The key goes into the `Authorization: Bearer <key>` header (the "API key" field of most clients).
 Regenerate it on the app page if it leaks; clients then need the new one.
 
-Supported: `GET /v1/models`, `POST /v1/chat/completions` (streamed or not). `temperature` and
-`max_tokens` are accepted and ignored: ChatGPT plan usage does not support them.
+Supported: `GET /v1/models`, `POST /v1/chat/completions` (streamed or not) with text and image
+messages, function tools (the client runs them), `reasoning_effort` and `response_format`.
+`temperature`, `max_tokens` and similar options are accepted and ignored: ChatGPT plan usage does
+not support them.
 
 ## Network
 
