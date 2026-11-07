@@ -1,19 +1,62 @@
+import { readFile } from "node:fs/promises";
+import { hostname } from "node:os";
 import { createApiServer } from "./api.ts";
-import { loadOrCreateApiKey } from "./apikey.ts";
+import { loadOrCreateApiKey, newApiKey, saveApiKey } from "./apikey.ts";
+import { OpenAIAuth } from "./auth.ts";
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./log.ts";
+import { Session } from "./session.ts";
+import { createUiServer } from "./ui.ts";
+import { Upstream } from "./upstream.ts";
 
 const config = await loadConfig();
 const log = createLogger(config.logLevel);
-const apiKey = await loadOrCreateApiKey(config.dataDir);
+const { version } = JSON.parse(
+  await readFile(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string };
 
-const api = createApiServer({ apiKey: () => apiKey, log });
+let apiKey = await loadOrCreateApiKey(config.dataDir);
+const auth = new OpenAIAuth(config.issuer, config.apiBase);
+const upstream = new Upstream(config.apiBase);
+const session = new Session({
+  dataDir: config.dataDir,
+  auth,
+  appName: "ChatGPT Gateway",
+  callbackPort: config.callbackPort,
+  log,
+});
+await session.load();
+
+const api = createApiServer({ apiKey: () => apiKey, session, upstream, log });
+const ui = createUiServer({
+  session,
+  upstream,
+  apiKey: () => apiKey,
+  regenerateKey: async () => {
+    const key = newApiKey();
+    await saveApiKey(config.dataDir, key);
+    apiKey = key;
+    return key;
+  },
+  internalUrl: `http://${hostname()}:${config.apiPort}/v1`,
+  apiPort: config.apiPort,
+  version,
+  trustAll: config.uiTrustAll,
+  log,
+});
+
+log.info(`ChatGPT Gateway ${version}`);
 api.listen(config.apiPort, () => log.info(`API listening on port ${config.apiPort}`));
+ui.listen(config.uiPort, () => log.info(`Page listening on port ${config.uiPort}`));
 
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, () => {
     log.info("Stopping");
-    api.close(() => process.exit(0));
-    api.closeAllConnections();
+    session.close();
+    for (const server of [api, ui]) {
+      server.close();
+      server.closeAllConnections();
+    }
+    process.exit(0);
   });
 }
