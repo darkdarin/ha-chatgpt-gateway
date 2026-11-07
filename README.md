@@ -79,6 +79,7 @@ the node lists the models itself.
 | Option | What for |
 |---|---|
 | `log_level` | how much the gateway writes to the app log (`debug` for troubleshooting); tokens, keys and requests are never logged |
+| `websocket` | keep a WebSocket to OpenAI open, so answers start about 0.8 s sooner (on by default; off: one HTTP request per answer) |
 
 ### Clients outside Home Assistant
 
@@ -111,14 +112,16 @@ for your household only.
 ## How it works
 
 ```
-FlowPilot, integrations,     OpenAI Chat Completions      ChatGPT          Responses API
+FlowPilot, integrations,     OpenAI Chat Completions      ChatGPT      Responses API (WebSocket)
 scripts on your network  ──────────────────────────────>  Gateway  ──────────────────────────> OpenAI
                          <──────────── streamed ─────────  (app)  <──────── streamed ─────────  (your plan)
 ```
 
 The app keeps the ChatGPT sign-in (OAuth with PKCE; the access token is renewed before it expires)
 and translates each Chat Completions request into a Responses API request with your plan's token,
-then streams the answer back as Chat Completions chunks. It is a thin gateway: it does not run
+then streams the answer back as Chat Completions chunks. Requests go over a WebSocket the app keeps
+open to OpenAI: with a ChatGPT plan, OpenAI takes over a second to accept each new HTTP request,
+while on an open connection an answer starts in about 0.7 s. It is a thin gateway: it does not run
 tools or keep conversations, so clients decide what the model may do.
 
 ## Development

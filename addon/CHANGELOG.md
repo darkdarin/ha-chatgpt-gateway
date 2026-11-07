@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- **Answers start about 0.8 s sooner.** The app keeps a WebSocket connection to OpenAI open and
+  warm instead of making a new HTTP request for every answer: the first words of an answer now
+  come in about 0.7 s instead of 1.6 s. If the connection cannot be used, answers go over HTTP as
+  before; the new option **Keep a connection to OpenAI open** turns it off.
+
 ## 0.1.0
 
 - First version: sign in with your ChatGPT plan on the app page, and use its models from FlowPilot

@@ -3,7 +3,7 @@
 # The image is the repository's Dockerfile, published to ghcr for each release (release.yml);
 # scripts/build_addon.py makes a local app that Home Assistant builds from source instead.
 name: ChatGPT Gateway
-version: "0.1.0"
+version: "0.2.0"
 slug: chatgpt_gateway
 description: Your ChatGPT plan as an OpenAI-compatible API in your home
 url: https://github.com/darkdarin/ha-chatgpt-gateway

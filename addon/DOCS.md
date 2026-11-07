@@ -42,6 +42,8 @@ your household only.
 
 - **Log level**: how much the gateway writes to the app log. Tokens, keys and the contents of
   requests are never logged.
+- **Keep a connection to OpenAI open** (on): answers start about 0.8 s sooner over a WebSocket
+  the app keeps open. Turn it off if answers fail in a way that HTTP requests do not.
 
 ## Data and backups
 
