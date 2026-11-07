@@ -7,7 +7,8 @@ it like any OpenAI endpoint: first of all the **LLM agent** node of
 [FlowPilot](https://github.com/darkdarin/flowpilot) (`~/Projects/ha-flow-pilot`), then Home
 Assistant integrations with a configurable OpenAI address, scripts and tools.
 
-The project is at its very start: nothing is built yet. Begin with the spike below.
+The spike below is done (2026-11-07; answers and evidence on the Notion project page). Next: the
+app.
 
 ## Owner and communication
 
@@ -69,10 +70,14 @@ The project is at its very start: nothing is built yet. Begin with the spike bel
 4. **A Home Assistant app**, not an integration: it needs its own HTTP server and port with its own
    key (an integration could only serve through Home Assistant with a Home Assistant token), and a
    sign-in page, which opens in the sidebar through Ingress. It does not depend on FlowPilot.
-5. **Node + the official DevKit** (`@siwc/local`, TypeScript) rather than reimplementing the
-   sign-in protocol: less risk when OpenAI changes it. (If the spike shows the DevKit cannot do
-   something essential, a Python reimplementation of the documented flow is the fallback; record
-   the decision.)
+5. **Node + our own implementation of the documented protocol** (TypeScript), not the DevKit.
+   Decided after the spike: `@siwc/local` is not published to npm and is under OpenAI's
+   *noncommercial* DevKit license (it would not be Apache-2.0 inside our image), it requires an
+   OS-backed token encryption a container does not have, and its `streamResponse` cannot set
+   `reasoning` or tools, so model calls go to the Responses API directly anyway. Write the sign-in
+   from OpenAI's [docs](https://developers.openai.com/siwc/token-sharing-open-source) (OAuth 2.0 +
+   PKCE + OIDC, dynamic client registration, refresh token rotation); **do not copy DevKit code**.
+   The DevKit stays a reference to compare behaviour against.
 
 ## The spike (do this first, on the owner's Mac)
 
