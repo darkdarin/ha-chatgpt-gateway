@@ -21,7 +21,7 @@ network as an **OpenAI-compatible API**: [FlowPilot](https://github.com/darkdari
 agent, Home Assistant integrations with a configurable OpenAI address, scripts and tools use it like
 any OpenAI endpoint.
 
-> Early version (0.1, not released yet). Sign-in, the model list and streamed answers with tool
+> Early version (0.1). Sign-in, the model list and streamed answers with tool
 > calls work end to end with FlowPilot's LLM agent. Not translated yet: web search, files and
 > audio.
 
