@@ -2,5 +2,8 @@ configuration:
   log_level:
     name: Log level
     description: How much the gateway writes to the app log. It never logs tokens, keys or what is asked.
+  websocket:
+    name: Keep a connection to OpenAI open
+    description: Answers start about 0.7 s sooner over a kept-open WebSocket. Turn off to use one HTTP request per answer, if the connection misbehaves.
 network:
   8780/tcp: OpenAI-compatible API for clients on your network; apps inside Home Assistant (FlowPilot) do not need it.

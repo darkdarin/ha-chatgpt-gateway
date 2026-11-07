@@ -1,6 +1,8 @@
 // OpenAI's API with the ChatGPT plan's token: the model catalog and the Responses API (always
 // streamed, never stored, as plan usage requires).
 
+import { type WsPool, WsUnavailable } from "./ws.ts";
+
 export interface Model {
   slug: string;
   displayName: string;
@@ -85,9 +87,12 @@ export async function* sseEvents(
 
 export class Upstream {
   readonly base: string;
+  /** The WebSocket route, used first when set; HTTP serves what it cannot. */
+  readonly ws: WsPool | undefined;
 
-  constructor(base = "https://api.openai.com/v1") {
+  constructor(base = "https://api.openai.com/v1", ws?: WsPool) {
     this.base = base;
+    this.ws = ws;
   }
 
   #headers(token: string, extra: Record<string, string> = {}): Record<string, string> {
@@ -120,8 +125,28 @@ export class Upstream {
       }));
   }
 
-  /** Sends a Responses API request and yields its streamed events. */
+  /** Sends a Responses API request and yields its streamed events (WebSocket first, else HTTP). */
   async *respond(
+    token: string,
+    body: Record<string, unknown>,
+    signal: AbortSignal,
+  ): AsyncGenerator<Record<string, unknown>> {
+    if (this.ws?.available) {
+      let started = false;
+      try {
+        for await (const event of this.ws.respond(token, body, signal)) {
+          started = true;
+          yield event;
+        }
+        return;
+      } catch (error) {
+        if (started || signal.aborted || !(error instanceof WsUnavailable)) throw error;
+      }
+    }
+    yield* this.#http(token, body, signal);
+  }
+
+  async *#http(
     token: string,
     body: Record<string, unknown>,
     signal: AbortSignal,

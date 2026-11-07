@@ -18,6 +18,8 @@ export interface Config {
   uiTrustAll: boolean;
   issuer: string;
   apiBase: string;
+  /** Talk to the Responses API over a kept-open WebSocket (faster); HTTP otherwise. */
+  websocket: boolean;
   logLevel: LogLevel;
 }
 
@@ -36,7 +38,7 @@ function port(value: string | undefined, fallback: number, name: string): number
 /**
  * Reads the configuration: the app options Home Assistant writes to `<data>/options.json`, with
  * environment overrides for running outside Home Assistant (`DATA_DIR`, `API_PORT`, `UI_PORT`,
- * `UI_TRUST_ALL=1`, `LOG_LEVEL`) and for tests (`CALLBACK_PORT`, `OPENAI_ISSUER`, `OPENAI_API`).
+ * `UI_TRUST_ALL=1`, `LOG_LEVEL`, `WEBSOCKET=0`) and for tests (`CALLBACK_PORT`, `OPENAI_ISSUER`, `OPENAI_API`).
  */
 export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<Config> {
   const dataDir = env.DATA_DIR ?? "/data";
@@ -58,6 +60,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     uiTrustAll: env.UI_TRUST_ALL === "1",
     issuer: env.OPENAI_ISSUER ?? OPENAI_ISSUER,
     apiBase: env.OPENAI_API ?? OPENAI_API,
+    websocket: env.WEBSOCKET !== undefined ? env.WEBSOCKET !== "0" : options.websocket !== false,
     logLevel: logLevel as LogLevel,
   };
 }

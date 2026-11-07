@@ -4,6 +4,7 @@
 import { createHash, generateKeyPairSync, type KeyObject, randomBytes, sign } from "node:crypto";
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { WebSocketServer } from "ws";
 
 export type ResponsesScript =
   | { events: Record<string, unknown>[]; endEarly?: boolean }
@@ -83,6 +84,11 @@ export class FakeOpenAI {
   responses: ResponsesScript | ((body: Record<string, unknown>) => ResponsesScript) = {
     events: textEvents("Hel", "lo"),
   };
+  /** Accept WebSocket connections to /v1/responses (false: refuse them, as an outage would). */
+  websocket = true;
+  wsConnections = 0;
+  wsRequests = 0;
+  readonly #wss = new WebSocketServer({ noServer: true });
   catalog = [
     { slug: "gpt-6-luna", display_name: "GPT-6-Luna", visibility: "list" },
     { slug: "gpt-6.1-sol", display_name: "GPT-6.1-Sol", visibility: "list" },
@@ -105,6 +111,46 @@ export class FakeOpenAI {
         })
         .catch((error: Error) => res.writeHead(500).end(error.message));
     });
+    this.server.on("upgrade", (req, socket, head) => {
+      const bearer = req.headers.authorization?.replace(/^Bearer /, "") ?? "";
+      const path = new URL(req.url ?? "/", "http://x").pathname;
+      if (!this.websocket || path !== "/v1/responses" || !this.#valid(bearer)) {
+        socket.end(`HTTP/1.1 ${this.websocket ? 401 : 503} Refused\r\n\r\n`);
+        return;
+      }
+      this.#wss.handleUpgrade(req, socket, head, (client) => {
+        this.wsConnections++;
+        client.on("message", (data) => {
+          const message = JSON.parse(String(data)) as Record<string, unknown>;
+          if (message.type !== "response.create") return;
+          const { type: _type, ...body } = message;
+          this.wsRequests++;
+          this.responsesRequests.push(body);
+          const script = this.#script(body);
+          if ("status" in script) {
+            const error = (script.body as { error?: unknown }).error ?? {
+              message: JSON.stringify(script.body),
+            };
+            client.send(JSON.stringify({ type: "error", status: script.status, error }));
+            return;
+          }
+          for (const event of script.events) client.send(JSON.stringify(event));
+        });
+      });
+    });
+  }
+
+  /** Closes every WebSocket from the server side, as OpenAI does with idle connections. */
+  dropWebSockets(): void {
+    for (const client of this.#wss.clients) client.close(1001, "idle");
+  }
+
+  #valid(bearer: string): boolean {
+    return this.#access.has(bearer) && !this.revoked.has(bearer);
+  }
+
+  #script(body: Record<string, unknown>): ResponsesScript {
+    return typeof this.responses === "function" ? this.responses(body) : this.responses;
   }
 
   async start(): Promise<this> {
@@ -114,6 +160,7 @@ export class FakeOpenAI {
   }
 
   stop(): Promise<void> {
+    for (const client of this.#wss.clients) client.terminate();
     this.server.closeAllConnections();
     return new Promise((resolve) => this.server.close(() => resolve()));
   }
@@ -243,7 +290,7 @@ export class FakeOpenAI {
         return { status: 200, body: {} };
       }
     }
-    if (!this.#access.has(bearer) || this.revoked.has(bearer)) {
+    if (!this.#valid(bearer)) {
       return {
         status: 401,
         body: {
@@ -260,7 +307,7 @@ export class FakeOpenAI {
     if (url.pathname === "/v1/responses") {
       const body = JSON.parse(text) as Record<string, unknown>;
       this.responsesRequests.push(body);
-      const script = typeof this.responses === "function" ? this.responses(body) : this.responses;
+      const script = this.#script(body);
       if ("status" in script) return { status: script.status, body: script.body };
       return { status: 200, sse: { events: script.events } };
     }

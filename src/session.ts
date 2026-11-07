@@ -119,6 +119,11 @@ export class Session {
     return this.#saved.email ? ` as ${this.#saved.email}` : "";
   }
 
+  /** The access token as saved, without renewing it (for keeping a connection warm). */
+  get currentToken(): string | undefined {
+    return this.#saved.status === "signed_in" ? this.#saved.tokens?.accessToken : undefined;
+  }
+
   get status(): Status {
     return this.#pending ? "signing_in" : this.#saved.status;
   }

@@ -26,5 +26,7 @@ ports_description:
   8780/tcp: OpenAI-compatible API for clients on your network (FlowPilot reaches it without this)
 options:
   log_level: info
+  websocket: true
 schema:
   log_level: list(debug|info|warning|error)
+  websocket: bool
