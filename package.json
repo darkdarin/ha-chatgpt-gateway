@@ -1,0 +1,25 @@
+{
+  "name": "chatgpt-gateway",
+  "version": "0.1.0",
+  "description": "Your ChatGPT plan as an OpenAI-compatible API in your home, as a Home Assistant app",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": "github:darkdarin/ha-chatgpt-gateway",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.6",
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}
