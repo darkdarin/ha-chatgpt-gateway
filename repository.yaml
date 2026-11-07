@@ -1,0 +1,4 @@
+# Home Assistant app repository: add this repository's URL in Settings → Apps → App Store → ⋮ → Repositories.
+name: ChatGPT Gateway
+url: https://github.com/darkdarin/ha-chatgpt-gateway
+maintainer: Pavel Babushkin <idarksoft@gmail.com>

@@ -1,0 +1,129 @@
+name: Release
+
+# A pushed tag v<version>:
+# - checks that the app (addon/config.yaml) and package.json carry <version>;
+# - builds the image on native amd64 and arm64 runners and publishes
+#   ghcr.io/darkdarin/ha-chatgpt-gateway:<version> (the app's "image"), plus :latest;
+# - creates the GitHub release; its notes are the "## <version>" section of addon/CHANGELOG.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  IMAGE: ghcr.io/darkdarin/ha-chatgpt-gateway
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check versions and extract notes
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for file in addon/config.yaml package.json; do
+            grep -q "\"$version\"" "$file" || { echo "::error file=$file::version $version not found"; exit 1; }
+          done
+          awk -v v="$version" '
+            /^## / { if (found) exit; found = ($2 == v); next }
+            found { print }
+          ' addon/CHANGELOG.md > notes.md
+          grep -q '^- ' notes.md || { echo "::error file=addon/CHANGELOG.md::no entries for $version"; exit 1; }
+          if grep -qi 'not released yet' notes.md; then
+            echo "::error file=addon/CHANGELOG.md::$version is still marked 'Not released yet'"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: notes
+          path: notes.md
+
+  image:
+    needs: check
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: |
+            io.hass.type=addon
+            io.hass.version=${{ needs.check.outputs.version }}
+            io.hass.arch=${{ matrix.arch }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.check.outputs.version }}
+            org.opencontainers.image.licenses=Apache-2.0
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,scope=${{ matrix.arch }},mode=max
+      - name: Keep the digest
+        run: |
+          mkdir -p digests
+          touch "digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digest-${{ matrix.arch }}
+          path: digests/*
+
+  manifest:
+    needs: [check, image]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digest-*
+          path: digests
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Publish the multi-arch image
+        working-directory: digests
+        run: |
+          docker buildx imagetools create \
+            -t "$IMAGE:${{ needs.check.outputs.version }}" -t "$IMAGE:latest" \
+            $(printf "$IMAGE@sha256:%s " *)
+          docker buildx imagetools inspect "$IMAGE:${{ needs.check.outputs.version }}"
+
+  release:
+    needs: [check, manifest]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: notes
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag

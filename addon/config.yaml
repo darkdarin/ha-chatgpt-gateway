@@ -1,0 +1,30 @@
+# Home Assistant app: an OpenAI-compatible API over the owner's ChatGPT plan, with its page
+# (sign-in, API key) in the sidebar (Ingress).
+# The image is the repository's Dockerfile, published to ghcr for each release (release.yml);
+# scripts/build_addon.py makes a local app that Home Assistant builds from source instead.
+name: ChatGPT Gateway
+version: "0.1.0"
+slug: chatgpt_gateway
+description: Your ChatGPT plan as an OpenAI-compatible API in your home
+url: https://github.com/darkdarin/ha-chatgpt-gateway
+image: ghcr.io/darkdarin/ha-chatgpt-gateway
+arch:
+  - aarch64
+  - amd64
+homeassistant: "2026.10.0"
+init: false
+startup: services
+ingress: true
+panel_icon: mdi:gate-arrow-right
+panel_title: ChatGPT Gateway
+# The ChatGPT sign-in (refresh token) stays out of backups: after a restore, sign in again.
+backup_exclude:
+  - chatgpt/*
+ports:
+  8780/tcp: null
+ports_description:
+  8780/tcp: OpenAI-compatible API for clients on your network (FlowPilot reaches it without this)
+options:
+  log_level: info
+schema:
+  log_level: list(debug|info|warning|error)

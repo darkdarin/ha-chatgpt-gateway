@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="15 150 955.5 780">
+<title>ChatGPT Gateway</title>
+<g stroke-width="70" stroke-linecap="round">
+  <path d="M100 660 L500 660" stroke="#9C7BF0" />
+  <path d="M500 660 L860 660" stroke="#E9A23B" />
+</g>
+<path d="M300 880 L300 400 A200 200 0 0 1 700 400 L700 880" fill="none" stroke="#2BB8A6" stroke-width="100" stroke-linecap="round" />
+<circle cx="100" cy="660" r="85" fill="#9C7BF0" />
+<path d="M860 549.5 L970.5 660 L860 770.5 L749.5 660 Z" fill="#E9A23B" />
+</svg>

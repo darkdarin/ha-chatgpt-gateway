@@ -119,8 +119,9 @@ page and summarize them for the owner before building.
   - Later, if needed: function calling pass-through (definitions in, tool-call deltas out) for
     Home Assistant LLM integrations.
 - **Auth:** an API key generated on first start, shown (and regenerable) on the app's page; the
-  app's own data folder keeps the profile and tokens (`/data`, mode 600). Decide with the owner
-  whether `/data` goes into Home Assistant backups (tokens) or is excluded.
+  app's own data folder keeps the profile and tokens (`/data`, mode 600). Decided: the ChatGPT
+  sign-in (`/data/chatgpt/`) is excluded from Home Assistant backups (`backup_exclude`); after a
+  restore the owner signs in again. The API key (`/data/api_key`) stays in backups.
 - **Page (Ingress):** sign-in status, the paste field for the sign-in step, the model list, the
   API address and key for clients, usage/limit errors. English and Russian.
 - **Packaging like FlowPilot:** a prebuilt multi-arch image (amd64 + arm64) on
@@ -128,12 +129,24 @@ page and summarize them for the owner before building.
   its own folder, `release.yml` building on native runners and creating the GitHub release from
   the changelog. Discovery for clients is not needed at first.
 - **FlowPilot side** needs nothing new: the LLM agent node takes the gateway's address
-  (`http://<pi>:<port>/v1`), the key as a FlowPilot secret, and lists the models itself.
+  (`http://d9eec4fe-chatgpt-gateway:8780/v1` from another app; `d9eec4fe` is the Supervisor's
+  hash of the repository URL), the key as a FlowPilot secret, and lists the models itself.
+- **Ports:** the API on 8780 (mapped by the user for LAN clients, `null` by default); the page on
+  the Ingress port 8099, trusting only the Supervisor (`172.30.32.2`); the sign-in callback
+  listener on `127.0.0.1` inside the container.
 
 ## Environment and checks
 
-- Node LTS for the app; keep dependencies few and pinned (lockfile). Tests run without a network
-  and without a ChatGPT account (a fake Responses API, as FlowPilot's tests fake OpenAI and Soniox).
+- Node 26 (LTS) runs the TypeScript sources directly (type stripping, erasable syntax only, no
+  build step); `tsc` only type checks, Biome lints and formats, tests use `node:test`. Keep
+  dependencies few and pinned (lockfile). Tests run without a network and without a ChatGPT
+  account (a fake Responses API, as FlowPilot's tests fake OpenAI and Soniox).
+- The owner's Mac has Node 22 system-wide; do not change it. Node 26 for this project is in
+  `~/.cache/chatgpt-gateway-dev/node-v26.13.0-darwin-arm64/bin`: prefix commands with
+  `PATH="$HOME/.cache/chatgpt-gateway-dev/node-v26.13.0-darwin-arm64/bin:$PATH"` (download it
+  again from nodejs.org if missing). `npm run check` runs lint, type check and tests.
+- Brand images: `uv run --no-project --with pillow python -I scripts/brand.py --font <Onest TTF>`
+  (the font is in `~/.cache/chatgpt-gateway-dev/Onest.ttf`, not committed).
 - CI must stay fast (a few minutes): no slow system package installs (the GitHub apt mirror stalls
   for minutes; FlowPilot and Telegram Assist were bitten by `apt install ffmpeg`). Lint, type
   check, tests; the app linter (`frenck/action-addon-linter`) like FlowPilot.
@@ -143,8 +156,9 @@ page and summarize them for the owner before building.
 
 ## Repository
 
-- GitHub: `darkdarin/ha-chatgpt-gateway` — create it only when the owner agrees (and whether it is
-  public). Push over SSH (`git@github.com:darkdarin/ha-chatgpt-gateway.git`).
+- GitHub: `darkdarin/ha-chatgpt-gateway`, public (created with the owner's consent, 2026-11-07).
+  Push over SSH (`git@github.com:darkdarin/ha-chatgpt-gateway.git`). Upload
+  `assets/brand/social-preview.png` by hand (Settings → General → Social preview).
 - The global `gh` account is a work account; do not run `gh auth switch`. Use the personal one per
   command: `GH_TOKEN="$(gh auth token --user darkdarin)" gh ...`; never print the token.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`); the git author is configured

@@ -1,0 +1,11 @@
+**/node_modules
+.git
+.github
+.claude
+assets
+addon
+scripts
+test
+dist
+*.env
+.env*
